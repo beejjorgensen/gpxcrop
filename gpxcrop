@@ -79,6 +79,10 @@ def in_bounds(lat, lon, corners):
         lon >= corners[1] and lon <= corners[3]
 
 def get_crop_point(lat, lon, plat, plon, corners):
+    """
+    Compute the intersection between a line segment and the bounding
+    box. Return None if no intersection.
+    """
 
     # corners[0], corners[1]      corners[2], corners[1]
     #
@@ -98,8 +102,16 @@ def get_crop_point(lat, lon, plat, plon, corners):
 
     return None
 
-
 def crop_segments(new_trk, trk, corners):
+    """
+    Crop all the track segments to a bounding box.
+
+    Make new segments as necessary.
+
+    Interpolate the intersection points between the line segments and
+    bounding box.
+    """
+
     new_seg = None
     in_crop = False
 
@@ -153,17 +165,37 @@ def crop_segments(new_trk, trk, corners):
         if new_seg is not None and len(new_seg.childNodes) > 0:
             new_trk.appendChild(new_seg)
 
-
 def crop_tracks(gpxnode, foster, corners):
     """
-    Go through all tracks, and call crop_segments()
+    Go through all tracks, and call crop_segments() to split segments
+    up.
     """
     for trk in foster.getElementsByTagName('trk'):
         new_trk = trk.cloneNode(False)
 
+        # Go through all track segments and split them up
         crop_segments(new_trk, trk, corners)
 
         if len(new_trk.childNodes) > 0:
+
+            # Copy all the non-trkseg nodes over
+            # Find the first node to insert before
+            first = None
+
+            for c in new_trk.childNodes:
+                if c.nodeType == xml.dom.Node.ELEMENT_NODE:
+                    first = c
+                    break
+
+            # Find all the non-trkseg nodes
+            for c in trk.childNodes:
+                if c.nodeType == xml.dom.Node.ELEMENT_NODE and \
+                   c.tagName.lower() != 'trkseg':
+
+                    new_c = c.cloneNode(True)
+                    new_trk.insertBefore(new_c, first)
+
+            # Fully cooked, append the new track
             gpxnode.appendChild(new_trk)
 
 def main(argv):
@@ -200,6 +232,7 @@ def main(argv):
     # into the main dom
     crop_tracks(gpxnode, foster, corners)
 
+    # Output final dom
     print(gpxdom.toprettyxml())
 
     return 0
