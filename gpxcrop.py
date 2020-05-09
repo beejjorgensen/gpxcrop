@@ -20,6 +20,7 @@ def line_segment_intersect(x1, y1, x2, y2, x3, y3, x4, y4):
     """
 
     # Common divisor
+    print(x1, y1, x2, y2, x3, y3, x4, y4, file=sys.stderr)
     d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
     
     # Check for parallel lines
@@ -127,12 +128,13 @@ def crop_segments(new_trk, trk, corners):
 
             # Transition out
             if in_crop and not new_in_crop:
-                cx, cy = get_crop_point(lat, lon, plat, plon, corners)
+                if plat is not None:
+                    cx, cy = get_crop_point(lat, lon, plat, plon, corners)
 
-                new_trkpt = trkpt.cloneNode(False)
-                new_trkpt.setAttribute("lat", str(cx))
-                new_trkpt.setAttribute("lon", str(cy))
-                new_seg.appendChild(new_trkpt)
+                    new_trkpt = trkpt.cloneNode(False)
+                    new_trkpt.setAttribute("lat", str(cx))
+                    new_trkpt.setAttribute("lon", str(cy))
+                    new_seg.appendChild(new_trkpt)
 
                 if len(new_seg.childNodes) > 0:
                     new_trk.appendChild(new_seg)
@@ -207,7 +209,7 @@ def main(argv):
         return 1
 
     try:
-        corners = list(map(int, argv[2].split(',')))
+        corners = list(map(float, argv[2].split(',')))
     except ValueError:
         usage()
         return 1
